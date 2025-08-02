@@ -26,7 +26,6 @@ import {
   Car,
   Layers
 } from 'lucide-react';
-import { MapComponent } from '@/components/ui/map';
 import { Toggle } from '@/components/ui/toggle';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
@@ -34,69 +33,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Index() {
   const [activeDemo, setActiveDemo] = useState('realtime');
-  const [vehicles, setVehicles] = useState([]);
-  const [visibleLayers, setVisibleLayers] = useState({
-    bus: true,
-    metro: true,
-    cab: true
-  });
-
-  // Simulated vehicle data - replace with real API calls
-  useEffect(() => {
-    const demoVehicles = [
-      {
-        id: 'BUS001',
-        type: 'bus',
-        position: [40.7128, -74.0060],
-        route: 'Route 1',
-        eta: '5 mins',
-        occupancy: 'Medium'
-      },
-      {
-        id: 'METRO001',
-        type: 'metro',
-        position: [40.7138, -74.0070],
-        route: 'Blue Line',
-        eta: '3 mins',
-        occupancy: 'High'
-      },
-      {
-        id: 'CAB001',
-        type: 'cab',
-        position: [40.7148, -74.0080],
-        eta: '2 mins',
-        occupancy: 'Low'
-      }
-    ];
-    setVehicles(demoVehicles);
-
-    let lastUpdate = Date.now();
-    let animationFrameId: number;
-
-    function updatePositions() {
-      const now = Date.now();
-      const delta = (now - lastUpdate) / 1000; // Convert to seconds
-      lastUpdate = now;
-
-      setVehicles(prev => prev.map(vehicle => ({
-        ...vehicle,
-        position: [
-          vehicle.position[0] + (Math.random() - 0.5) * 0.001 * delta,
-          vehicle.position[1] + (Math.random() - 0.5) * 0.001 * delta
-        ]
-      })));
-
-      animationFrameId = requestAnimationFrame(updatePositions);
-    }
-
-    animationFrameId = requestAnimationFrame(updatePositions);
-
-    return () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
-    };
-  }, []);
 
   const features = [
     {
@@ -151,7 +87,7 @@ export default function Index() {
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 dark-gradient-bg"></div>
+        <div className="absolute inset-0 light-gradient-bg"></div>
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-5xl md:text-7xl font-bold mb-8">
@@ -191,48 +127,21 @@ export default function Index() {
             </div>
           </div>
 
-          {/* Interactive Map */}
+          {/* Simple Map Placeholder */}
           <div className="max-w-6xl mx-auto">
-            <Card className="dark-card-bg border-primary/20">
+            <Card className="light-card-bg border-primary/20">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-2xl font-bold text-foreground">Live Transportation Map</h3>
-                  <ToggleGroup type="multiple" variant="outline" className="space-x-2">
-                    <ToggleGroupItem
-                      value="bus"
-                      aria-label="Toggle buses"
-                      pressed={visibleLayers.bus}
-                      onClick={() => setVisibleLayers(prev => ({ ...prev, bus: !prev.bus }))}
-                    >
-                      <Bus className="w-4 h-4 mr-2" />
-                      Buses
-                    </ToggleGroupItem>
-                    <ToggleGroupItem
-                      value="metro"
-                      aria-label="Toggle metro"
-                      pressed={visibleLayers.metro}
-                      onClick={() => setVisibleLayers(prev => ({ ...prev, metro: !prev.metro }))}
-                    >
-                      <Train className="w-4 h-4 mr-2" />
-                      Metro
-                    </ToggleGroupItem>
-                    <ToggleGroupItem
-                      value="cab"
-                      aria-label="Toggle cabs"
-                      pressed={visibleLayers.cab}
-                      onClick={() => setVisibleLayers(prev => ({ ...prev, cab: !prev.cab }))}
-                    >
-                      <Car className="w-4 h-4 mr-2" />
-                      Cabs
-                    </ToggleGroupItem>
-                  </ToggleGroup>
+                  <div className="text-muted-foreground">Map temporarily disabled for debugging</div>
                 </div>
-                <MapComponent
-                  center={[40.7128, -74.0060]}
-                  zoom={13}
-                  vehicles={vehicles}
-                  visibleLayers={visibleLayers}
-                />
+                <div className="h-96 bg-muted rounded-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <MapPin className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">Map component temporarily disabled</p>
+                    <p className="text-sm text-muted-foreground">This helps isolate the black screen issue</p>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -256,7 +165,7 @@ export default function Index() {
             {features.map((feature, index) => {
               const IconComponent = feature.icon;
               return (
-                <Card key={index} className="dark-card-bg border-primary/10 hover:border-primary/30 transition-all duration-300 group">
+                <Card key={index} className="light-card-bg border-primary/10 hover:border-primary/30 transition-all duration-300 group">
                   <CardContent className="p-8">
                     <div className="flex items-start space-x-4">
                       <div className="w-16 h-16 bg-primary/20 rounded-lg flex items-center justify-center group-hover:bg-primary/30 transition-colors">
@@ -276,7 +185,7 @@ export default function Index() {
           {/* Navigation to Other Sections */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Link to="/analytics" className="group">
-              <Card className="dark-card-bg border-info/20 hover:border-info transition-all duration-300">
+              <Card className="light-card-bg border-info/20 hover:border-info transition-all duration-300">
                 <CardContent className="p-6 text-center">
                   <BarChart3 className="w-12 h-12 text-info mx-auto mb-4" />
                   <h3 className="text-lg font-bold text-foreground mb-2">Analytics Dashboard</h3>
@@ -290,7 +199,7 @@ export default function Index() {
             </Link>
 
             <Link to="/accessibility" className="group">
-              <Card className="dark-card-bg border-success/20 hover:border-success transition-all duration-300">
+              <Card className="light-card-bg border-success/20 hover:border-success transition-all duration-300">
                 <CardContent className="p-6 text-center">
                   <Heart className="w-12 h-12 text-success mx-auto mb-4" />
                   <h3 className="text-lg font-bold text-foreground mb-2">Accessibility & Impact</h3>
@@ -304,7 +213,7 @@ export default function Index() {
             </Link>
 
             <Link to="/case-studies" className="group">
-              <Card className="dark-card-bg border-orange-500/20 hover:border-orange-500 transition-all duration-300">
+              <Card className="light-card-bg border-orange-500/20 hover:border-orange-500 transition-all duration-300">
                 <CardContent className="p-6 text-center">
                   <Award className="w-12 h-12 text-orange-500 mx-auto mb-4" />
                   <h3 className="text-lg font-bold text-foreground mb-2">Success Stories</h3>
@@ -365,7 +274,7 @@ export default function Index() {
           {/* Testimonials */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {testimonials.map((testimonial, index) => (
-              <Card key={index} className="dark-card-bg border-primary/10">
+              <Card key={index} className="light-card-bg border-primary/10">
                 <CardContent className="p-8">
                   <div className="flex items-center mb-4">
                     {[...Array(testimonial.rating)].map((_, i) => (

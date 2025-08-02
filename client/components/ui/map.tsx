@@ -10,9 +10,9 @@ const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN || 'your_mapbox_token';
 // Custom marker icons
 const createIcon = (type: 'bus' | 'metro' | 'cab') => {
   const color = {
-    bus: '#00f5ff', // neon cyan
-    metro: '#32ff32', // neon lime
-    cab: '#ff8c00', // neon orange
+    bus: '#0891b2', // cyan
+    metro: '#16a34a', // green
+    cab: '#ea580c', // orange
   }[type];
 
   const iconUrl = `/icons/${type}.svg`;
@@ -65,28 +65,30 @@ function createAnimatedMarker(vehicle: Vehicle, map: L.Map, prevPos?: [number, n
     icon: createIcon(vehicle.type)
   });
 
-  marker.bindPopup(`
-    <div class="p-2">
-      <h3 class="font-bold mb-2 text-foreground">
-        ${vehicle.type.toUpperCase()} ${vehicle.id}
-      </h3>
-      ${vehicle.route ? `
-        <p class="text-sm text-muted-foreground mb-1">
-          Route: ${vehicle.route}
-        </p>
-      ` : ''}
-      ${vehicle.eta ? `
-        <p class="text-sm text-muted-foreground mb-1">
-          ETA: ${vehicle.eta}
-        </p>
-      ` : ''}
-      ${vehicle.occupancy ? `
-        <p class="text-sm text-muted-foreground">
-          Occupancy: ${vehicle.occupancy}
-        </p>
-      ` : ''}
-    </div>
-  `);
+  const popupContent = document.createElement('div');
+  popupContent.className = 'p-2';
+  popupContent.innerHTML = `
+    <h3 class="font-bold mb-2 text-foreground">
+      ${vehicle.type.toUpperCase()} ${vehicle.id}
+    </h3>
+    ${vehicle.route ? `
+      <p class="text-sm text-muted-foreground mb-1">
+        Route: ${vehicle.route}
+      </p>
+    ` : ''}
+    ${vehicle.eta ? `
+      <p class="text-sm text-muted-foreground mb-1">
+        ETA: ${vehicle.eta}
+      </p>
+    ` : ''}
+    ${vehicle.occupancy ? `
+      <p class="text-sm text-muted-foreground">
+        Occupancy: ${vehicle.occupancy}
+      </p>
+    ` : ''}
+  `;
+
+  marker.bindPopup(popupContent);
 
   if (prevPos) {
     const duration = 1000; // Animation duration in ms
@@ -97,6 +99,8 @@ function createAnimatedMarker(vehicle: Vehicle, map: L.Map, prevPos?: [number, n
       const elapsed = currentTime - start;
       const progress = Math.min(elapsed / duration, 1);
 
+      const lat = prevPos[0] + (vehicle.position[0] - prevPos[0]) * progress;
+      const lng = prevPos[1] + (vehicle.position[1] - prevPos[1]) * progress;
       const currentPos = [
         prevPos[0] + (vehicle.position[0] - prevPos[0]) * progress,
         prevPos[1] + (vehicle.position[1] - prevPos[1]) * progress
@@ -128,13 +132,17 @@ function MapComponent({ center, zoom, vehicles, visibleLayers }: MapComponentPro
     if (!containerRef.current) return;
 
     if (!mapRef.current) {
-      const map = L.map(containerRef.current).setView(center, zoom);
-      mapRef.current = map;
+      try {
+        const map = L.map(containerRef.current).setView(center, zoom);
+        mapRef.current = map;
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        className: 'dark-theme-tiles'
-      }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          className: 'light-theme-tiles'
+        }).addTo(map);
+      } catch (error) {
+        console.error('Error initializing map:', error);
+      }
     }
 
     const map = mapRef.current;
