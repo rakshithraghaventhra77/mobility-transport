@@ -1,0 +1,130 @@
+version: '3.8'
+
+services:
+  # Main application
+  bus-agent:
+    build:
+      context: .
+      target: development
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=development
+      - PORT=8080
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - redis
+      - mongodb
+    networks:
+      - bus-agent-network
+    restart: unless-stopped
+
+  # Redis for caching and real-time data
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - bus-agent-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # MongoDB for data persistence
+  mongodb:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_INITDB_DATABASE=bus_agent
+    volumes:
+      - mongodb-data:/data/db
+      - ./scripts/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    networks:
+      - bus-agent-network
+    restart: unless-stopped
+
+  # ML Model Service (Optional)
+  ml-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.ml
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./scripts:/app/scripts
+      - ./models:/app/models
+    networks:
+      - bus-agent-network
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+
+  # Monitoring and Analytics
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - bus-agent-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana:/etc/grafana/provisioning
+    networks:
+      - bus-agent-network
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # Message Queue (Optional)
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+    networks:
+      - bus-agent-network
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - bus-agent-network
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  mongodb-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  bus-agent-network:
+    driver: bridge 
