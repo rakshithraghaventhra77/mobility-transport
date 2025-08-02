@@ -119,40 +119,70 @@ function createAnimatedMarker(vehicle: Vehicle, map: L.Map, prevPos?: [number, n
 };
 
 function MapComponent({ center, zoom, vehicles, visibleLayers }: MapComponentProps) {
-  const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<{ [key: string]: L.Marker }>({});
+  const prevPositionsRef = useRef<{ [key: string]: [number, number] }>({});
 
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const map = L.map(containerRef.current).setView(center, zoom);
-    mapRef.current = map;
+    if (!mapRef.current) {
+      const map = L.map(containerRef.current).setView(center, zoom);
+      mapRef.current = map;
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        className: 'dark-theme-tiles'
+      }).addTo(map);
+    }
 
-    // Add markers for vehicles
+    const map = mapRef.current;
+    const currentMarkers = { ...markersRef.current };
+
     vehicles.forEach(vehicle => {
       if (visibleLayers[vehicle.type]) {
-        const marker = L.marker(vehicle.position, {
-          icon: createIcon(vehicle.type)
-        }).addTo(map);
+        const prevMarker = markersRef.current[vehicle.id];
+        const prevPos = prevPositionsRef.current[vehicle.id];
 
-        marker.bindPopup(`
-          <div class="p-2">
-            <h3 class="font-bold">${vehicle.type.toUpperCase()} ${vehicle.id}</h3>
-            ${vehicle.route ? `<p>Route: ${vehicle.route}</p>` : ''}
-            ${vehicle.eta ? `<p>ETA: ${vehicle.eta}</p>` : ''}
-            ${vehicle.occupancy ? `<p>Occupancy: ${vehicle.occupancy}</p>` : ''}
-          </div>
-        `);
+        if (prevMarker) {
+          if ((prevMarker as any)._animationFrame) {
+            cancelAnimationFrame((prevMarker as any)._animationFrame);
+          }
+          prevMarker.remove();
+        }
+
+        const marker = createAnimatedMarker(vehicle, map, prevPos);
+        marker.addTo(map);
+        currentMarkers[vehicle.id] = marker;
+        prevPositionsRef.current[vehicle.id] = vehicle.position;
       }
     });
 
+    Object.entries(markersRef.current).forEach(([id, marker]) => {
+      if (!currentMarkers[id]) {
+        if ((marker as any)._animationFrame) {
+          cancelAnimationFrame((marker as any)._animationFrame);
+        }
+        marker.remove();
+      }
+    });
+
+    markersRef.current = currentMarkers;
+
     return () => {
-      map.remove();
-      mapRef.current = null;
+      if (mapRef.current) {
+        Object.values(markersRef.current).forEach(marker => {
+          if ((marker as any)._animationFrame) {
+            cancelAnimationFrame((marker as any)._animationFrame);
+          }
+          marker.remove();
+        });
+        mapRef.current.remove();
+        mapRef.current = null;
+        markersRef.current = {};
+        prevPositionsRef.current = {};
+      }
     };
   }, [center, zoom, vehicles, visibleLayers]);
   const prevPositions = useRef<Record<string, [number, number]>>({});
